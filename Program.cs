@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using MiniShop6.Components;
 using MiniShop6.Components.Account;
 using MiniShop6.Data;
+using MiniShop6.Repository;
+using MiniShop6.Repository.IRepository;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +14,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
 
