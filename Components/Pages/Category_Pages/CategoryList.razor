@@ -1,5 +1,12 @@
 ﻿@page "/category"
 @inject ICategoryRepository _categoryRepository
+@inject IJSRuntime _jsRuntime
+
+<BsModal OnModalConfirmation="ConfirmDelete_Click"
+         ButtonBootstrapStyle="btn-danger"
+         ButtonText="Delete"
+         Title="Are you sure you want to delete this Category?">
+</BsModal>
 
 @if (IsProcessing)
 {
@@ -44,6 +51,7 @@ else
                             <td>@obj.Name</td>
                             <td>
                                 <a href="@($"category/update/{obj.Id}")" class="btn btn-primary">Edit</a>
+                                <button class="btn btn-danger ms-2" @onclick="() => HandleDelete(obj.Id)">Delete</button>
                             </td>
                         </tr>
                     }
@@ -56,6 +64,31 @@ else
 @code {
     private bool IsProcessing { get; set; } = true;
     private IEnumerable<Category> Categories { get; set; } = new List<Category>();
+
+    private int DeleteCategoryID { get; set; } = 0;
+
+    private void HandleDelete(int id)
+    {
+        DeleteCategoryID = id;
+        _jsRuntime.InvokeVoidAsync("ShowConfirmationModal");
+    }
+
+    private async Task ConfirmDelete_Click(bool isConfirmed)
+    {
+        IsProcessing = true;
+        await _jsRuntime.InvokeVoidAsync("HideConfirmationModal");
+        if (isConfirmed && DeleteCategoryID != 0)
+        {
+            var result = await _categoryRepository.DeleteAsync(DeleteCategoryID);
+            if (result)
+                await _jsRuntime.ToastrSuccess("Category deleted successfully.");
+            else
+                await _jsRuntime.ToastrError("Failed to delete category.");
+            await LoadCategories();
+        }
+        DeleteCategoryID = 0;
+        IsProcessing = false;
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
