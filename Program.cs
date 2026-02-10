@@ -6,6 +6,8 @@ using MiniShop6.Components.Account;
 using MiniShop6.Data;
 using MiniShop6.Repository;
 using MiniShop6.Repository.IRepository;
+using MiniShop6.Services;
+using MiniShop6.Services.IServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +17,7 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<IFileService, FileService>();
 builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
 
