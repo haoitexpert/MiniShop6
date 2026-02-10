@@ -1,6 +1,7 @@
 ﻿@page "/category"
 @inject ICategoryRepository _categoryRepository
 @inject IJSRuntime _jsRuntime
+@inject IFileService _fileService
 
 <BsModal OnModalConfirmation="ConfirmDelete_Click"
          ButtonBootstrapStyle="btn-danger"
@@ -40,6 +41,7 @@ else
             <table class="table table-bordered table-striped">
                 <thead>
                     <tr>
+                        <th>Image</th>
                         <th>Name</th>
                         <th>Actions</th>
                     </tr>
@@ -48,6 +50,10 @@ else
                     @foreach (var obj in Categories)
                     {
                         <tr>
+                            <td>
+                                <img src="@(string.IsNullOrEmpty(obj.ImageUrl) ? "/images/default.png" : obj.ImageUrl)"
+                                     alt="@obj.Name" style="max-height:50px;" />
+                            </td>
                             <td>@obj.Name</td>
                             <td>
                                 <a href="@($"category/update/{obj.Id}")" class="btn btn-primary">Edit</a>
@@ -79,11 +85,23 @@ else
         await _jsRuntime.InvokeVoidAsync("HideConfirmationModal");
         if (isConfirmed && DeleteCategoryID != 0)
         {
+            // Lấy category trước khi xóa để lấy đường dẫn ảnh
+            var category = await _categoryRepository.GetAsync(DeleteCategoryID);
+
             var result = await _categoryRepository.DeleteAsync(DeleteCategoryID);
             if (result)
+            {
+                // Xóa file ảnh nếu có
+                if (!string.IsNullOrEmpty(category.ImageUrl))
+                {
+                    _fileService.DeleteFile(category.ImageUrl);
+                }
                 await _jsRuntime.ToastrSuccess("Category deleted successfully.");
+            }
             else
+            {
                 await _jsRuntime.ToastrError("Failed to delete category.");
+            }
             await LoadCategories();
         }
         DeleteCategoryID = 0;

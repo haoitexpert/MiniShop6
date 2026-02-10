@@ -3,6 +3,7 @@
 @inject ICategoryRepository _categoryRepository
 @inject NavigationManager _navigationManager
 @inject IJSRuntime _jsRuntime
+@inject IFileService _fileService
 
 @if (IsProcessing)
 {
@@ -33,6 +34,27 @@ else
                     <ValidationMessage For="@(() => Category.Name)" />
                 </div>
 
+                @* PHẦN UPLOAD ẢNH *@
+                <div class="py-3 col-12">
+                    <InputFile OnChange="HandleFileSelection" class="form-control" accept="image/*" />
+                </div>
+
+                @* PREVIEW ẢNH *@
+                <div class="py-3">
+                    @if (!string.IsNullOrEmpty(ImagePreviewUrl))
+                    {
+                        <img src="@ImagePreviewUrl" alt="preview" style="max-height:200px;" />
+                    }
+                    else if (!string.IsNullOrEmpty(Category.ImageUrl))
+                    {
+                        <img src="@Category.ImageUrl" alt="current" style="max-height:200px;" />
+                    }
+                    else
+                    {
+                        <img src="/images/default.png" alt="default" style="max-height:200px;" />
+                    }
+                </div>
+
                 <div class="row mt-3">
                     <div class="col-6 col-md-3">
                         <button type="submit" class="btn btn-primary form-control" disabled="@IsProcessing">
@@ -56,6 +78,8 @@ else
     private Category Category { get; set; } = new Category();
 
     private bool IsProcessing { get; set; } = true;
+    private IBrowserFile? SelectedFile { get; set; }
+    private string? ImagePreviewUrl { get; set; }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -75,9 +99,33 @@ else
         }
     }
 
+    private async Task HandleFileSelection(InputFileChangeEventArgs e)
+    {
+        SelectedFile = e.File;
+
+        // Tạo preview - đọc file thành base64 hiển thị tạm
+        var format = e.File.ContentType;
+        var buffer = new byte[e.File.Size];
+        await e.File.OpenReadStream(5 * 1024 * 1024).ReadAsync(buffer);
+        ImagePreviewUrl = $"data:{format};base64,{Convert.ToBase64String(buffer)}";
+    }
+
     private async Task UpsertCategory()
     {
         IsProcessing = true;
+
+        // Upload file nếu có chọn ảnh mới
+        if (SelectedFile != null)
+        {
+            // Xóa ảnh cũ nếu đang update
+            if (!string.IsNullOrEmpty(Category.ImageUrl))
+            {
+                _fileService.DeleteFile(Category.ImageUrl);
+            }
+
+            Category.ImageUrl = await _fileService.SaveFileAsync(SelectedFile, "images/category");
+        }
+
         if (Category.Id == 0)
         {
             await _categoryRepository.CreateAsync(Category);
@@ -88,6 +136,7 @@ else
             await _categoryRepository.UpdateAsync(Category);
             await _jsRuntime.ToastrSuccess("Category updated successfully");
         }
+
         IsProcessing = false;
         _navigationManager.NavigateTo("category");
     }

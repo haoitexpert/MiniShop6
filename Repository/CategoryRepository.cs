@@ -51,11 +51,14 @@ namespace MiniShop6.Repository
             if (objFromDb is not null)
             {
                 objFromDb.Name = obj.Name;
+                objFromDb.ImageUrl = obj.ImageUrl;
                 _db.Category.Update(objFromDb);
                 await _db.SaveChangesAsync();
                 return objFromDb;
             }
             return obj;
         }
+
+
     }
 }
